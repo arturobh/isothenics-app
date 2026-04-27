@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model block {
+  id             Int              @id @default(autoincrement())
+  routine_id     Int
+  name           String           @db.VarChar(100)
+  order          Int
+  routine        routine          @relation(fields: [routine_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  block_exercise block_exercise[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model block_exercise {
+  id                       Int                        @id @default(autoincrement())
+  block_id                 Int
+  min_sets                 Int
+  internal_reps            Int?
+  rpe_target               Decimal?                   @db.Decimal(3, 1)
+  rest_seconds             Int
+  notes                    String?
+  order                    Int
+  max_sets                 Int?
+  block                    block                      @relation(fields: [block_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  block_exercise_component block_exercise_component[]
+  workout_block_exercise   workout_block_exercise[]
+}
+
+model block_exercise_component {
+  id                     Int                     @id @default(autoincrement())
+  block_exercise_id      Int
+  element_progression_id Int
+  movement_id            Int
+  reps_min               Int?
+  reps_max               Int?
+  hold_seconds_min       Int?
+  hold_seconds_max       Int?
+  order                  Int
+  block_exercise         block_exercise          @relation(fields: [block_exercise_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  element_progression    element_progression     @relation(fields: [element_progression_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  movement               movement                @relation(fields: [movement_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workout_set_component  workout_set_component[]
+}
+
+model element {
+  id                  Int                   @id @default(autoincrement())
+  name                String                @db.VarChar(100)
+  description         String?
+  element_progression element_progression[]
+  movement            movement[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model element_progression {
+  id                       Int                        @id @default(autoincrement())
+  element_id               Int
+  progression_id           Int
+  intensity_percent        Decimal                    @db.Decimal(4, 2)
+  level                    Int
+  block_exercise_component block_exercise_component[]
+  element                  element                    @relation(fields: [element_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  progression              progression                @relation(fields: [progression_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([element_id, progression_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model movement {
+  id                       Int                        @id @default(autoincrement())
+  element_id               Int
+  name                     String                     @db.VarChar(100)
+  type                     String                     @db.VarChar(10)
+  block_exercise_component block_exercise_component[]
+  element                  element                    @relation(fields: [element_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model progression {
+  id                  Int                   @id @default(autoincrement())
+  name                String                @db.VarChar(100)
+  element_progression element_progression[]
+}
+
+model routine {
+  id        Int       @id @default(autoincrement())
+  user_id   Int
+  name      String    @db.VarChar(100)
+  objective String?
+  block     block[]
+  user      user      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workout   workout[]
+}
+
+model user {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique @db.VarChar(255)
+  username      String    @unique @db.VarChar(100)
+  password_hash String
+  routine       routine[]
+  workout       workout[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model workout {
+  id                     Int                      @id @default(autoincrement())
+  user_id                Int
+  routine_id             Int
+  date                   DateTime                 @db.Date
+  status                 String                   @db.VarChar(20)
+  routine_snapshot       Json
+  routine                routine                  @relation(fields: [routine_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user                   user                     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workout_block_exercise workout_block_exercise[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model workout_block_exercise {
+  id                Int            @id @default(autoincrement())
+  workout_id        Int
+  block_exercise_id Int
+  status            String         @db.VarChar(20)
+  order             Int
+  block_exercise    block_exercise @relation(fields: [block_exercise_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workout           workout        @relation(fields: [workout_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workout_set       workout_set[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model workout_set {
+  id                        Int                     @id @default(autoincrement())
+  workout_block_exercise_id Int
+  set_number                Int
+  rpe                       Decimal?                @db.Decimal(3, 1)
+  rir                       Int?
+  completed_at              DateTime?               @db.Timestamp(6)
+  notes                     String?
+  workout_block_exercise    workout_block_exercise  @relation(fields: [workout_block_exercise_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workout_set_component     workout_set_component[]
+}
+
+model workout_set_component {
+  id                          Int                      @id @default(autoincrement())
+  workout_set_id              Int
+  block_exercise_component_id Int
+  reps                        Int?
+  hold_seconds                Int?
+  block_exercise_component    block_exercise_component @relation(fields: [block_exercise_component_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workout_set                 workout_set              @relation(fields: [workout_set_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
