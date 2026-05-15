@@ -14,25 +14,29 @@ const findAllElements = async () => {
   return prisma.element.findMany();
 };
 
-const findElementById = async (elementId) => {};
-
-const findAllProgressions = async () => {
-  return prisma.progression.findMany();
+const findElementById = async (elementId) => {
+  return prisma.element.findUnique({
+    where: { id: elementId },
+  });
 };
 
-const findProgressionsByElementId = async (elementId) => {
-  return prisma.element_progression.findMany({
-    where: { element_id: elementId },
+const findElementByIdWithProgressions = async (elementId) => {
+  return prisma.element.findUnique({
+    where: { id: elementId },
     include: {
-      progression: true,
-      element: {
-        select: {
-          name: true,
-          description: true,
+      element_progression: {
+        include: {
+          progression: {
+            select: { name: true },
+          },
         },
       },
     },
   });
+};
+
+const findAllProgressions = async () => {
+  return prisma.progression.findMany();
 };
 
 module.exports = {
@@ -40,6 +44,6 @@ module.exports = {
   findMovementById,
   findAllElements,
   findElementById,
+  findElementByIdWithProgressions,
   findAllProgressions,
-  findProgressionsByElementId,
 };
